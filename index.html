@@ -66,6 +66,14 @@
             }
         }
 
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px 40px;
+            text-align: center;
+        }
+
         .content-wrapper {
             display: grid;
             grid-template-columns: 420px 1fr;
@@ -213,6 +221,50 @@
             .map-legend, .location-fab {
                 right: 24px;
             }
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: #4C52FF;
+            font-size: 1.5rem;
+        }
+
+        .info-card {
+            background: rgba(76, 82, 255, 0.08);
+            border: 1px solid rgba(76, 82, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: start;
+            gap: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            background: rgba(76, 82, 255, 0.12);
+            border-color: rgba(76, 82, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .info-card i {
+            color: #4C52FF;
+            font-size: 1.25rem;
+            margin-top: 2px;
+        }
+
+        .info-card-text {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
         }
 
         h1 {
@@ -390,6 +442,19 @@
             transform: translateY(0);
         }
 
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
+        }
+
         .loading {
             font-size: 0.9rem;
             margin: 15px 0;
@@ -435,22 +500,37 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        .coordinates {
+            font-size: 0.85rem;
+            margin: 0;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #c7d2fe;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .coordinates i {
+            color: #4C52FF;
+        }
+
+        .coordinates:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
         .error {
             color: #fca5a5;
             border-color: rgba(252, 165, 165, 0.3);
-        }
-
-        .footer {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.3);
-            font-weight: 500;
-            animation: fadeIn 0.6s ease-out 0.5s both;
-            z-index: 2000;
         }
 
         .info {
@@ -466,6 +546,19 @@
 
         .info:hover {
             background: rgba(255, 255, 255, 0.08);
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 500;
+            animation: fadeIn 0.6s ease-out 0.5s both;
+            z-index: 2000;
         }
     </style>
 </head>
