@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ward Boundary Detector</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 30px;
+            width: 100%;
+            align-items: start;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            position: sticky;
+            top: 20px;
+        }
+
+        #map {
+            width: 100%;
+            height: 650px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .right-panel {
+                position: static;
+            }
+            #map {
+                height: 500px;
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+            letter-spacing: 0.5px;
+        }
+
+        .status {
+            margin: 0;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .status:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-text {
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .ward-number {
+            font-size: 5rem;
+            font-weight: 700;
+            margin: 20px 0 10px 0;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: none;
+            line-height: 1;
+        }
+
+        .out-of-boundary {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fca5a5;
+            text-shadow: none;
+            letter-spacing: 0.5px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: #ffffff;
+            border: none;
+            padding: 16px 48px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            margin: 0;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            font-size: 0.9rem;
+            margin: 15px 0;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .coordinates {
+            font-size: 0.85rem;
+            margin: 0;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            color: #ddd6fe;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .error {
+            color: #fca5a5;
+            border-color: rgba(252, 165, 165, 0.3);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 30px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 500;
+        }
+
+        .info {
+            font-size: 0.85rem;
+            margin: 0;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <h1>Ward Boundary Detector</h1>
+            <p class="subtitle">Real-time location-based ward identification system</p>
+        </div>
+        
+        <div class="content-wrapper">
+            <div class="left-panel">
+                <div id="statusBox" class="status">
+                    <div class="status-text">Click "DETECT WARD" to check your location</div>
+                </div>
+
+                <div id="coordinates" class="coordinates"></div>
+                
+                <button id="detectBtn" onclick="detectWard()">DETECT WARD</button>
+                
+                <div id="loading" class="loading" style="display: none;">LOADING...</div>
+                <div id="info" class="info"></div>
+            </div>
+
+            <div class="right-panel">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">CREATED BY YUVRAJ SINGH TOMAR</div>
+
+    <script>
+        let wardBoundaries = [];
+        let map = null;
+        let userMarker = null;
+        let wardLayers = [];
+
+        // Parse KML file
+        async function loadKML() {
+            try {
+                const response = await fetch('ward boundary.kml');
+                const kmlText = await response.text();
+                const parser = new DOMParser();
+                const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+                
+                const placemarks = kmlDoc.getElementsByTagName('Placemark');
+                
+                for (let placemark of placemarks) {
+                    const nameElement = placemark.getElementsByTagName('name')[0];
+                    const coordinatesElement = placemark.getElementsByTagName('coordinates')[0];
+                    
+                    if (nameElement && coordinatesElement) {
+                        const wardName = nameElement.textContent.trim();
+                        const coordsText = coordinatesElement.textContent.trim();
+                        
+                        // Parse coordinates (format: lon,lat,alt lon,lat,alt ...)
+                        const points = coordsText.split(/\s+/).map(coord => {
+                            const [lon, lat, alt] = coord.split(',');
+                            return {
+                                lon: parseFloat(lon),
+                                lat: parseFloat(lat)
+                            };
+                        }).filter(p => !isNaN(p.lon) && !isNaN(p.lat));
+                        
+                        if (points.length > 0) {
+                            wardBoundaries.push({
+                                name: wardName,
+                                polygon: points
+                            });
+                        }
+                    }
+                }
+                
+                console.log(`Loaded ${wardBoundaries.length} ward boundaries`);
+                initMap();
+            } catch (error) {
+                console.error('Error loading KML:', error);
+                showError('Failed to load ward boundary data');
+            }
+        }
+
+        // Initialize map
+        function initMap() {
+            if (map) return;
+            
+            // Center on approximate location (Rishikesh area)
+            map = L.map('map', {
+                center: [25.33, 74.60],
+                zoom: 12,
+                zoomControl: true
+            });
+
+            // Colorful tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: ''
+            }).addTo(map);
+
+            // Add CSS for colorful map
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .leaflet-control-zoom a {
+                    background: rgba(255, 255, 255, 0.95) !important;
+                    color: #1e3c72 !important;
+                    border: none !important;
+                    font-weight: 600 !important;
+                    transition: all 0.2s !important;
+                }
+                .leaflet-control-zoom a:hover {
+                    background: #ffffff !important;
+                    transform: scale(1.05);
+                }
+                .leaflet-popup-content-wrapper {
+                    background: rgba(30, 60, 114, 0.95) !important;
+                    color: #ffffff !important;
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                    border-radius: 12px !important;
+                    font-family: 'Inter', sans-serif !important;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+                    backdrop-filter: blur(10px) !important;
+                    padding: 4px !important;
+                }
+                .leaflet-popup-content {
+                    margin: 12px 16px !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                }
+                .leaflet-popup-tip {
+                    background: rgba(30, 60, 114, 0.95) !important;
+                }
+                .leaflet-control-zoom {
+                    border: none !important;
+                    border-radius: 10px !important;
+                    overflow: hidden;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            drawWardBoundaries();
+        }
+
+        // Draw all ward boundaries on map
+        function drawWardBoundaries() {
+            // Clear existing layers
+            wardLayers.forEach(layer => map.removeLayer(layer));
+            wardLayers = [];
+
+            // Professional color palette for wards
+            const colors = [
+                '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
+                '#ef4444', '#ec4899', '#14b8a6', '#6366f1', '#84cc16',
+                '#f97316', '#a855f7', '#0ea5e9', '#22c55e', '#eab308',
+                '#dc2626', '#d946ef', '#0d9488', '#4f46e5', '#65a30d'
+            ];
+
+            wardBoundaries.forEach((ward, index) => {
+                const latLngs = ward.polygon.map(p => [p.lat, p.lon]);
+                const color = colors[index % colors.length];
+                
+                const polygon = L.polygon(latLngs, {
+                    color: color,
+                    weight: 2.5,
+                    fillColor: color,
+                    fillOpacity: 0.25,
+                    opacity: 0.8
+                }).addTo(map);
+
+                polygon.bindPopup(`<b>WARD ${ward.name}</b>`);
+                wardLayers.push(polygon);
+            });
+
+            // Fit map to show all boundaries
+            if (wardLayers.length > 0) {
+                const group = L.featureGroup(wardLayers);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+        }
+
+        // Update map with user location
+        function updateMapLocation(location, wardName) {
+            if (!map) initMap();
+
+            // Remove old marker
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+
+            // Add new marker with professional styling
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                    width: 28px;
+                    height: 28px;
+                    border: 4px solid #ffffff;
+                    border-radius: 50%;
+                    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6), 0 0 0 4px rgba(255, 255, 255, 0.3);
+                    animation: pulse 2s ease-in-out infinite;
+                "></div>
+                <style>
+                    @keyframes pulse {
+                        0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6), 0 0 0 4px rgba(255, 255, 255, 0.3); }
+                        50% { transform: scale(1.15); box-shadow: 0 4px 30px rgba(59, 130, 246, 0.8), 0 0 0 6px rgba(255, 255, 255, 0.4); }
+                    }
+                </style>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            userMarker = L.marker([location.lat, location.lon], { icon: icon }).addTo(map);
+            
+            const popupText = wardName ? `<b>Your Location</b><br>Ward ${wardName}` : '<b>Your Location</b><br>Out of Ward Boundary';
+            userMarker.bindPopup(popupText).openPopup();
+
+            // Highlight the detected ward with professional styling
+            const colors = [
+                '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
+                '#ef4444', '#ec4899', '#14b8a6', '#6366f1', '#84cc16',
+                '#f97316', '#a855f7', '#0ea5e9', '#22c55e', '#eab308',
+                '#dc2626', '#d946ef', '#0d9488', '#4f46e5', '#65a30d'
+            ];
+
+            wardLayers.forEach((layer, index) => {
+                const color = colors[index % colors.length];
+                if (wardBoundaries[index].name === wardName) {
+                    layer.setStyle({
+                        color: color,
+                        weight: 4,
+                        fillOpacity: 0.5,
+                        opacity: 1
+                    });
+                } else {
+                    layer.setStyle({
+                        color: color,
+                        weight: 2.5,
+                        fillOpacity: 0.25,
+                        opacity: 0.8
+                    });
+                }
+            });
+
+            map.setView([location.lat, location.lon], 14);
+        }
+
+        // Point in polygon algorithm (Ray casting)
+        function isPointInPolygon(point, polygon) {
+            let inside = false;
+            const x = point.lon;
+            const y = point.lat;
+            
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].lon;
+                const yi = polygon[i].lat;
+                const xj = polygon[j].lon;
+                const yj = polygon[j].lat;
+                
+                const intersect = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+
+        // Detect which ward the user is in
+        async function detectWard() {
+            const statusBox = document.getElementById('statusBox');
+            const loading = document.getElementById('loading');
+            const detectBtn = document.getElementById('detectBtn');
+            const coordsDiv = document.getElementById('coordinates');
+            const infoDiv = document.getElementById('info');
+            
+            // Load KML if not already loaded
+            if (wardBoundaries.length === 0) {
+                loading.style.display = 'block';
+                statusBox.innerHTML = '<div class="status-text">LOADING WARD DATA...</div>';
+                await loadKML();
+                loading.style.display = 'none';
+            }
+            
+            if (wardBoundaries.length === 0) {
+                showError('No ward boundary data available');
+                return;
+            }
+            
+            // Get user location
+            if (!navigator.geolocation) {
+                showError('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            detectBtn.disabled = true;
+            loading.style.display = 'block';
+            statusBox.innerHTML = '<div class="status-text">GETTING YOUR LOCATION...</div>';
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLocation = {
+                        lon: position.coords.longitude,
+                        lat: position.coords.latitude
+                    };
+                    
+                    loading.style.display = 'none';
+                    detectBtn.disabled = false;
+                    
+                    // Display coordinates
+                    coordsDiv.innerHTML = `LAT: ${userLocation.lat.toFixed(6)} | LON: ${userLocation.lon.toFixed(6)}`;
+                    
+                    // Check which ward the user is in
+                    let foundWard = null;
+                    for (let ward of wardBoundaries) {
+                        if (isPointInPolygon(userLocation, ward.polygon)) {
+                            foundWard = ward.name;
+                            break;
+                        }
+                    }
+                    
+                    if (foundWard) {
+                        statusBox.innerHTML = `
+                            <div>
+                                <div class="status-text">YOU ARE IN WARD</div>
+                                <div class="ward-number">${foundWard}</div>
+                            </div>
+                        `;
+                        infoDiv.innerHTML = `Checked against ${wardBoundaries.length} ward boundaries`;
+                    } else {
+                        statusBox.innerHTML = '<div class="out-of-boundary">OUT OF WARD BOUNDARY</div>';
+                        infoDiv.innerHTML = `Not found in any of the ${wardBoundaries.length} ward boundaries`;
+                    }
+
+                    // Update map
+                    updateMapLocation(userLocation, foundWard);
+                },
+                (error) => {
+                    loading.style.display = 'none';
+                    detectBtn.disabled = false;
+                    
+                    let errorMsg = 'Unable to get your location';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = 'Location permission denied';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = 'Location information unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = 'Location request timed out';
+                            break;
+                    }
+                    showError(errorMsg);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function showError(message) {
+            const statusBox = document.getElementById('statusBox');
+            statusBox.innerHTML = `<div class="status-text error">${message}</div>`;
+        }
+
+        // Load KML on page load
+        window.addEventListener('load', () => {
+            loadKML();
+        });
+    </script>
+</body>
+</html>
